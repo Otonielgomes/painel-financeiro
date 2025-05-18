@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel Financeiro Profissional</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f6f8; }
+    header { background: #004aad; color: white; padding: 20px; text-align: center; }
+    nav { display: flex; flex-wrap: wrap; justify-content: center; background: #e0e0e0; padding: 10px; }
+    nav button {
+      margin: 5px; padding: 10px 15px; border: none; border-radius: 6px;
+      background: #fff; cursor: pointer; font-weight: bold; color: #004aad;
+    }
+    nav button.active { background: #004aad; color: #fff; }
+    section { display: none; padding: 20px; }
+    section.active { display: block; }
+
+    form {
+      background: white; padding: 20px; border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.05); max-width: 1000px; margin: auto;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+    input, select, textarea, button {
+      width: 100%; padding: 10px; border-radius: 6px;
+      border: 1px solid #ccc; font-size: 14px;
+    }
+    button {
+      background-color: #004aad; color: white;
+      font-weight: bold; border: none; cursor: pointer;
+    }
+    iframe {
+      width: 100%; height: 600px; border: none; border-radius: 8px; margin-top: 20px;
+    }
+    canvas {
+      background: white; padding: 20px; border-radius: 8px;
+      margin-bottom: 30px; box-shadow: 0 0 6px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <header><h1>Painel Financeiro Profissional</h1></header>
+
+  <nav>
+    <button onclick="mostrarAba('dashboard')" class="active">Dashboard</button>
+    <button onclick="mostrarAba('lancamentos')">Lançamentos</button>
+    <button onclick="mostrarAba('relatorios')">Relatórios</button>
+    <button onclick="mostrarAba('projetos')">Projetos</button>
+    <button onclick="mostrarAba('categorias')">Categorias</button>
+    <button onclick="mostrarAba('contas')">Contas</button>
+    <button onclick="mostrarAba('periodo')">Filtro Período</button>
+  </nav>
+
+  <section id="dashboard" class="active">
+    <h2>Visão Geral</h2>
+    <canvas id="graficoCategoria"></canvas>
+    <canvas id="graficoMensal"></canvas>
+  </section>
+
+  <section id="lancamentos">
+    <h2>Novo Lançamento</h2>
+    <form action="https://script.google.com/macros/s/AKfycbxVE8rZtsVMW6wJoYEGktV_H3v4ELPsdWsf9z7M95kq2MKmruj36WJjUS-mGvtzwqRW/exec" method="POST" target="hidden_iframe">
+      <div class="form-grid">
+        <div><label>Data</label><input type="date" name="data" required></div>
+        <div><label>Tipo</label><select name="tipo"><option value="Receita">Receita</option><option value="Despesa">Despesa</option></select></div>
+        <div><label>Valor</label><input type="number" name="valor" placeholder="R$ 0,00" required></div>
+        <div><label>Categoria</label><input type="text" name="categoria" placeholder="Categoria"></div>
+        <div><label>Projeto</label><input type="text" name="projeto" placeholder="Projeto"></div>
+        <div><label>Conta</label><input type="text" name="conta" placeholder="Conta"></div>
+        <div style="grid-column: 1 / -1;"><label>Descrição</label><textarea name="descricao" rows="2"></textarea></div>
+      </div>
+      <button type="submit">Salvar</button>
+    </form>
+    <iframe name="hidden_iframe" style="display:none;"></iframe>
+  </section>
+
+  <section id="relatorios"><iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1.../pubhtml?gid=999999&single=true"></iframe></section>
+  <section id="projetos"><iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1.../pubhtml?gid=234567&single=true"></iframe></section>
+  <section id="categorias"><iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1.../pubhtml?gid=345678&single=true"></iframe></section>
+  <section id="contas"><iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1.../pubhtml?gid=456789&single=true"></iframe></section>
+  <section id="periodo"><iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1.../pubhtml?gid=101010&single=true"></iframe></section>
+
+  <script>
+    function mostrarAba(id) {
+      document.querySelectorAll("nav button").forEach(btn => btn.classList.remove("active"));
+      document.querySelectorAll("section").forEach(sec => sec.classList.remove("active"));
+      document.querySelector(`nav button[onclick="mostrarAba('${id}')"]`).classList.add("active");
+      document.getElementById(id).classList.add("active");
+    }
+    new Chart(document.getElementById("graficoCategoria"), {
+      type: "pie",
+      data: {
+        labels: ["Alimentação", "Transporte", "Saúde", "Outros"],
+        datasets: [{ data: [400, 250, 300, 150], backgroundColor: ["#4e79a7", "#f28e2b", "#e15759", "#76b7b2"] }]
+      }
+    });
+    new Chart(document.getElementById("graficoMensal"), {
+      type: "bar",
+      data: {
+        labels: ["Jan", "Fev", "Mar", "Abr", "Mai"],
+        datasets: [
+          { label: "Receitas", backgroundColor: "#4caf50", data: [1200, 1500, 1300, 1700, 1600] },
+          { label: "Despesas", backgroundColor: "#f44336", data: [900, 1100, 1000, 1400, 1300] }
+        ]
+      }
+    });
+  </script>
+</body>
+</html>
