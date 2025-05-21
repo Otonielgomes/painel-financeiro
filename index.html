@@ -3,33 +3,143 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Bem-vindo ao Painel Financeiro</title>
-  <link rel="icon" type="image/png" href="favicon.ico">
+  <title>Painel Financeiro - Filtros com Resultado</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
+    body { font-family: Arial, sans-serif; margin: 0; background: #f2f4f8; }
+    header { background: #004aad; color: white; padding: 20px; text-align: center; }
+    .filtros, .indicadores, .charts, .historico {
+      max-width: 1100px; margin: auto; padding: 20px;
+    }
+    .filtros select, .filtros input {
+      padding: 10px; margin: 5px; border-radius: 6px; border: 1px solid #ccc;
+    }
+    .indicadores {
+      display: flex; justify-content: space-between; flex-wrap: wrap;
+      background: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .card {
+      flex: 1 1 220px; margin: 10px; background: #e8edf4; border-radius: 10px; padding: 20px;
       text-align: center;
-      background: #f5f7fa;
-      margin: 0;
-      padding: 50px;
     }
-    h1 { color: #004aad; }
-    a.button {
-      display: inline-block;
-      margin-top: 30px;
-      padding: 15px 30px;
-      background: #004aad;
-      color: white;
-      text-decoration: none;
-      font-weight: bold;
-      border-radius: 8px;
-      font-size: 18px;
+    canvas { background: white; border-radius: 10px; padding: 20px; margin-top: 20px; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 20px;
     }
+    th, td {
+      padding: 10px; text-align: left; border-bottom: 1px solid #ccc;
+    }
+    th { background: #004aad; color: white; }
   </style>
 </head>
 <body>
-  <h1>Painel Financeiro Profissional</h1>
-  <p>Gerencie suas finanças com eficiência e clareza.</p>
-  <a href="painel.html" class="button">Acessar Painel</a>
+  <header><h1>Painel Financeiro - Resultado com Filtros</h1></header>
+
+  <div class="filtros">
+    <select id="filtroProjeto">
+      <option value="">Todos os Projetos</option>
+      <option value="Franquia">Franquia</option>
+    </select>
+    <select id="filtroCategoria">
+      <option value="">Todas as Categorias</option>
+      <option value="Alimentação">Alimentação</option>
+      <option value="Diversos">Diversos</option>
+    </select>
+    <select id="filtroConta">
+      <option value="">Todas as Contas</option>
+      <option value="Nubank Crédito">Nubank Crédito</option>
+    </select>
+    <input type="month" id="filtroMes">
+  </div>
+
+  <div class="indicadores">
+    <div class="card"><h3>Saldo</h3><div id="saldo">R$ 0,00</div></div>
+    <div class="card"><h3>Receitas</h3><div id="receitas">R$ 0,00</div></div>
+    <div class="card"><h3>Despesas</h3><div id="despesas">R$ 0,00</div></div>
+    <div class="card"><h3>Despesas/Receita</h3><div id="resultado">0%</div></div>
+  </div>
+
+  <div class="charts">
+    <canvas id="graficoCategoria" height="200"></canvas>
+    <canvas id="graficoMensal" height="200"></canvas>
+  </div>
+
+  <div class="historico">
+    <h2>Histórico de Lançamentos</h2>
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Categoria</th><th>Projeto</th><th>Conta</th><th>Descrição</th></tr>
+      </thead>
+      <tbody id="historicoBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const dados = [
+      { data: "2025-05-19", tipo: "Despesa", valor: 46.80, categoria: "Alimentação", projeto: "Franquia", conta: "Nubank Crédito", descricao: "Griletto" },
+      { data: "2025-05-19", tipo: "Despesa", valor: 73.81, categoria: "Diversos", projeto: "Franquia", conta: "Nubank Crédito", descricao: "Nissei" },
+      { data: "2025-05-20", tipo: "Despesa", valor: 37.55, categoria: "Alimentação", projeto: "Franquia", conta: "Nubank Crédito", descricao: "Azulzinha" },
+      { data: "2025-05-20", tipo: "Despesa", valor: 42.90, categoria: "Alimentação", projeto: "Franquia", conta: "Nubank Crédito", descricao: "Bob’s" }
+    ];
+
+    const formatar = v => "R$ " + v.toFixed(2);
+
+    function atualizar() {
+      const fProj = document.getElementById("filtroProjeto").value;
+      const fCat = document.getElementById("filtroCategoria").value;
+      const fConta = document.getElementById("filtroConta").value;
+      const fMes = document.getElementById("filtroMes").value;
+
+      const filtro = d =>
+        (!fProj || d.projeto === fProj) &&
+        (!fCat || d.categoria === fCat) &&
+        (!fConta || d.conta === fConta) &&
+        (!fMes || d.data.startsWith(fMes));
+
+      const filtrado = dados.filter(filtro);
+      let receitas = 0, despesas = 0, hist = "", catData = {}, mensal = {};
+
+      filtrado.forEach(d => {
+        if (d.tipo === "Receita") receitas += d.valor;
+        else despesas += d.valor;
+
+        catData[d.categoria] = (catData[d.categoria] || 0) + d.valor;
+        const mes = d.data.slice(0,7);
+        mensal[mes] = mensal[mes] || { Receita: 0, Despesa: 0 };
+        mensal[mes][d.tipo] += d.valor;
+
+        hist += `<tr><td>${d.data}</td><td>${d.tipo}</td><td>${formatar(d.valor)}</td><td>${d.categoria}</td><td>${d.projeto}</td><td>${d.conta}</td><td>${d.descricao}</td></tr>`;
+      });
+
+      document.getElementById("historicoBody").innerHTML = hist;
+      document.getElementById("receitas").innerText = formatar(receitas);
+      document.getElementById("despesas").innerText = formatar(despesas);
+      document.getElementById("saldo").innerText = formatar(receitas - despesas);
+      document.getElementById("resultado").innerText = receitas ? ((despesas / receitas) * 100).toFixed(1) + "%" : "0%";
+
+      new Chart(document.getElementById("graficoCategoria"), {
+        type: "pie",
+        data: {
+          labels: Object.keys(catData),
+          datasets: [{ data: Object.values(catData) }]
+        }
+      });
+
+      const meses = Object.keys(mensal);
+      new Chart(document.getElementById("graficoMensal"), {
+        type: "bar",
+        data: {
+          labels: meses,
+          datasets: [
+            { label: "Receitas", backgroundColor: "#4caf50", data: meses.map(m => mensal[m].Receita) },
+            { label: "Despesas", backgroundColor: "#f44336", data: meses.map(m => mensal[m].Despesa) }
+          ]
+        }
+      });
+    }
+
+    document.querySelectorAll("select, input").forEach(el => el.addEventListener("change", atualizar));
+    atualizar();
+  </script>
 </body>
 </html>
